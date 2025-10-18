@@ -1,0 +1,28 @@
+{
+    "name": "portal-cascade",
+    "version": "0.1.0",
+    "description": "Cascade Framework for Battlefield Portal",
+    "main": "src/cascade/index.ts",
+    "types": "types/index.d.ts",
+    "bin": {
+        "bf-bundle": "./scripts/bundle.mjs"
+    },
+    "files": [
+        "src/cascade",
+        "types",
+        "scripts",
+        "tsconfig.json",
+        "biome.json"
+    ],
+    "scripts": {
+        "format": "biome format --write .",
+        "lint": "biome lint .",
+        "check": "biome check --write ."
+    },
+    "devDependencies": {
+        "@biomejs/biome": "^1.8.3",
+        "@types/node": "^24.7.2",
+        "ts-morph": "^27.0.2",
+        "typescript": "^5.9.3"
+    }
+}
