@@ -1,10 +1,21 @@
 // src/cascade/static/Game.ts
 // Static utility namespace for game-wide operations
 
+import RaycastManager from '../core/RaycastManager';
+
 /**
  * Static utility namespace for game-wide operations and settings.
  */
 export namespace Game {
+    /**
+     * Gets the singleton RaycastManager instance for performing raycasts.
+     * The engine only supports one active raycast at a time, so this manager
+     * queues requests and processes them sequentially.
+     * @returns The RaycastManager instance.
+     */
+    export function getRaycastManager(): RaycastManager {
+        return RaycastManager.getInstance();
+    }
     /**
      * Sets friendly fire on or off.
      * @param enabled Whether friendly fire should be enabled.
@@ -69,13 +80,6 @@ export namespace Game {
     export function endGame(obj: mod.Team | mod.Player): void {
         // biome-ignore lint/suspicious/noExplicitAny: <this is the only sane way to do this imo>
         mod.EndGameMode(obj as any);
-    }
-
-    /**
-     * Disables player joining.
-     */
-    export function disableJoining(): void {
-        mod.DisablePlayerJoin();
     }
 
     /**

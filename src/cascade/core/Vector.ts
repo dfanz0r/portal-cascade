@@ -1,9 +1,12 @@
 // src/cascade/core/Vector.ts
 // Vector wrapper class providing developer-friendly access to mod.Vector
 
+import { Preserve } from "../decorators";
+
 /**
  * Wrapper class for Vector objects, providing ergonomic access to vector components and operations.
  */
+@Preserve()
 export class Vector {
     private handle: mod.Vector;
 

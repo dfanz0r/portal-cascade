@@ -1,7 +1,10 @@
 // src/cascade/structures/GameArray.ts
 // Wrapper class for mod.Array providing a TypeScript-friendly interface
 
-import { MathUtils } from "../static/MathUtils";
+import { random } from "../static/MathUtils";
+import { Preserve } from "../decorators";
+import type { ModObject } from "./ModObject";
+import type { UIWidget } from "../structures";
 
 /**
  * A type-safe wrapper around the mod.Array type, providing familiar array-like operations.
@@ -20,10 +23,57 @@ function debugLog(message: string): void {
     }
 }
 
-export class GameArray<T = unknown> {
+/**
+ * Supported types for GameArray elements, including mod types and primitive types.
+ * This list was tested to ensure compatibility with the mod API.
+ * if the type doesn't exist inside this array typically the runtime will throw:
+ *     `Exception:TypeError: Cannot convert Object to a MBSupportedType in arg`
+ * when trying to add it to a mod.Array.
+ */
+export type ArraySupportedTypes =
+    | ModObject<mod.Object>
+    | UIWidget
+    // TODO - these objects don't yet have wrapper types
+    | mod.Squad
+    | mod.DamageType
+    | mod.DeathType
+    | mod.PortalEnum
+    | mod.Message
+    | mod.WeaponPackage
+    | mod.WeaponUnlock
+    | mod.Variable
+    | mod.Vector
+    | mod.Transform
+    // These are the only js primitive types supported
+    | string
+    | number
+    | boolean;
+
+/**
+ * A type-safe wrapper around the mod.Array type, providing familiar array-like operations.
+ * Allows iteration, filtering, mapping, and other common array operations on game arrays.
+ * One limitation of this class is that it enforces a single type T for all elements,
+ * so heterogeneous arrays (e.g., containing both Players and Vehicles) are not directly supported.
+ * Even though the underlying mod.Array can hold mixed types, this wrapper requires
+ * a consistent type T for type safety and ergonomic usage.
+ *
+ * This also handles transformation of raw mod.Array elements into managed wrapped instances for better usability.
+ *
+ * @example
+ * const players = new GameArray<Player>(mod.AllPlayers());
+ * players.forEach(player => console.log(player));
+ * const teamAPlayers = players.filter(p => mod.GetTeam(p) === teamA);
+ *
+ * const newVehicleArray = new GameArray<Vehicle>(); // creates empty array
+ *
+ * @template T The type of elements in the array, must be one of ArraySupportedTypes.
+ *
+ */
+@Preserve()
+export class GameArray<T extends ArraySupportedTypes> {
     private handle: mod.Array;
     private transformer?: (raw: unknown) => T;
-    private cache?: (T | undefined)[];
+    private cache?: T[];
 
     /**
      * Creates a new GameArray wrapper around a mod.Array handle.
@@ -33,8 +83,13 @@ export class GameArray<T = unknown> {
     public constructor(array?: mod.Array, transformer?: (raw: unknown) => T) {
         this.handle = array ?? mod.EmptyArray();
         this.transformer = transformer;
-        // Only create cache if we have a transformer
-        this.cache = transformer ? [] : undefined;
+        // Create cache with same length as array if we have a transformer
+        if (transformer) {
+            const arrayLength = mod.CountOf(this.handle);
+            this.cache = new Array(arrayLength);
+        } else {
+            this.cache = undefined;
+        }
         if (DEBUG_GAME_ARRAY) {
             debugLog(
                 `Constructed with length: ${mod.CountOf(
@@ -84,7 +139,7 @@ export class GameArray<T = unknown> {
         let index = 0;
         const length = this.length();
         const handle = this.handle;
-        const getOrTransform = (idx: number, raw: unknown) =>
+        const getOrTransform = (idx: number, raw: T) =>
             this.getOrTransform(idx, raw);
 
         if (DEBUG_GAME_ARRAY) {
@@ -187,7 +242,7 @@ export class GameArray<T = unknown> {
             return undefined;
         }
         // Get a random index first, then use cached transform
-        const randomIndex = Math.floor(MathUtils.random(0, this.length() - 1));
+        const randomIndex = Math.floor(random(0, this.length() - 1));
         return this.at(randomIndex);
     }
 
@@ -200,18 +255,25 @@ export class GameArray<T = unknown> {
         // If the value is a wrapped object with a handle property, unwrap it
         // biome-ignore lint/suspicious/noExplicitAny: Need to check for handle property dynamically
         const rawValue = (value as any)?.handle ?? value;
-        mod.AppendToArray(this.handle, rawValue);
+        this.cache?.push(value);
+        this.handle = mod.AppendToArray(this.handle, rawValue);
         return this;
     }
 
     /**
-     * Adds multiple elements to the end of the array.
+     * Adds multiple elements to the end of this array.
      * @param values The values to add.
      * @returns This GameArray instance for chaining.
      */
-    public pushAll(values: T[]): GameArray<T> {
-        for (const value of values) {
-            this.push(value);
+    public pushAll(values: GameArray<T> | T[]): GameArray<T> {
+        if (values instanceof GameArray) {
+            // Appending a mod.Array will concat the arrays - FIXED: assign result back
+            this.handle = mod.AppendToArray(this.handle, values.getHandle());
+            this.cache = this.cache?.concat(values.cache ?? []);
+        } else {
+            for (const value of values) {
+                this.push(value);
+            }
         }
         return this;
     }
@@ -255,8 +317,10 @@ export class GameArray<T = unknown> {
      * @param transform Function that transforms each element.
      * @returns A new GameArray with transformed elements.
      */
-    public map<U = unknown>(transform: (element: T) => U): GameArray<U> {
-        const result = new GameArray<U>();
+    public map<TRtnType extends ArraySupportedTypes>(
+        transform: (element: T) => TRtnType
+    ): GameArray<TRtnType> {
+        const result = new GameArray<TRtnType>();
         const len = this.length();
         for (let i = 0; i < len; i++) {
             const rawValue = mod.ValueInArray(this.handle, i);
@@ -271,7 +335,7 @@ export class GameArray<T = unknown> {
      * @param predicate Function to test elements.
      * @returns True if at least one element matches the predicate.
      */
-    public some(predicate: (element: T) => boolean): boolean {
+    public any(predicate: (element: T) => boolean): boolean {
         let found = false;
         const len = this.length();
         for (let i = 0; i < len; i++) {
@@ -344,10 +408,10 @@ export class GameArray<T = unknown> {
      * @param initialValue Initial accumulator value.
      * @returns The final accumulated value.
      */
-    public reduce<U = unknown>(
-        callback: (accumulator: U, element: T) => U,
-        initialValue: U
-    ): U {
+    public reduce<TRtnType>(
+        callback: (accumulator: TRtnType, element: T) => TRtnType,
+        initialValue: TRtnType
+    ): TRtnType {
         let accumulator = initialValue;
         const len = this.length();
         for (let i = 0; i < len; i++) {
@@ -383,21 +447,28 @@ export class GameArray<T = unknown> {
         const len = this.length();
         const endIdx = end ?? len;
 
-        const result = new GameArray<T>(undefined, this.transformer);
-        for (let i = Math.max(0, start); i < Math.min(len, endIdx); i++) {
-            const rawValue = mod.ValueInArray(this.handle, i);
-            const element = this.getOrTransform(i, rawValue);
-            result.push(element);
-        }
-        return result;
+        // Clamp indices to valid range
+        const startIdx = Math.max(0, start);
+        const finalEndIdx = Math.min(len, endIdx);
+
+        // Use mod.ArraySlice for efficient slicing
+        const slicedHandle = mod.ArraySlice(
+            this.handle,
+            startIdx,
+            finalEndIdx - startIdx
+        );
+        return new GameArray<T>(slicedHandle, this.transformer);
     }
 
     /**
      * Creates a new GameArray with elements in randomized order.
      * @returns A new GameArray with randomly shuffled elements.
      */
-    public randomized(): GameArray<T> {
-        return new GameArray<T>(mod.RandomizedArray(this.handle));
+    public asRandomized(): GameArray<T> {
+        return new GameArray<T>(
+            mod.RandomizedArray(this.handle),
+            this.transformer
+        );
     }
 
     /**
@@ -405,55 +476,11 @@ export class GameArray<T = unknown> {
      * @param sortIndex The index to sort by (for compound array types).
      * @returns A new GameArray with sorted elements.
      */
-    public sorted(sortIndex = 0): GameArray<T> {
-        return new GameArray<T>(mod.SortedArray(this.handle, sortIndex));
-    }
-
-    /**
-     * Flattens nested arrays into a single GameArray.
-     * @returns A new GameArray with all nested elements flattened.
-     */
-    public flatten(): GameArray<T> {
-        const result = new GameArray<T>();
-        const len = this.length();
-        for (let i = 0; i < len; i++) {
-            const element = mod.ValueInArray(this.handle, i);
-            if (mod.IsType(element, mod.Types.Array)) {
-                const nested = new GameArray<T>(element as mod.Array).flatten();
-                const nestedLen = nested.length();
-                for (let j = 0; j < nestedLen; j++) {
-                    const item = nested.at(j);
-                    if (item !== undefined) {
-                        result.push(item);
-                    }
-                }
-            } else {
-                result.push(element as T);
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Creates a new GameArray containing unique elements (removes duplicates).
-     * Uses object equality for comparison.
-     * @returns A new GameArray with unique elements.
-     */
-    public unique(): GameArray<T> {
-        const result = new GameArray<T>(undefined, this.transformer);
-        const seen = new Set<string>();
-
-        const len = this.length();
-        for (let i = 0; i < len; i++) {
-            const rawValue = mod.ValueInArray(this.handle, i);
-            const element = this.getOrTransform(i, rawValue);
-            const key = String(element);
-            if (!seen.has(key)) {
-                seen.add(key);
-                result.push(element);
-            }
-        }
-        return result;
+    public asSorted(sortIndex = 0): GameArray<T> {
+        return new GameArray<T>(
+            mod.SortedArray(this.handle, sortIndex),
+            this.transformer
+        );
     }
 
     /**
@@ -462,12 +489,9 @@ export class GameArray<T = unknown> {
      * @returns A string representation of the array elements.
      */
     public join(separator = ","): string {
-        const parts: string[] = [];
-        const len = this.length();
-        for (let i = 0; i < len; i++) {
-            parts.push(String(mod.ValueInArray(this.handle, i)));
-        }
-        return parts.join(separator);
+        return this.toArray()
+            .map((elem) => String(elem))
+            .join(separator);
     }
 
     /**

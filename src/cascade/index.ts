@@ -1,11 +1,11 @@
-// src/cascade/index.ts
 // Main framework entry point - exports all framework components
 
 // Core
-export { ModObject } from "./core/ModObject";
-export { IMod } from "./core/IMod";
-export { Vector } from "./core/Vector";
-export { wait } from "./core/Async";
+export { ModObject } from './core/ModObject';
+export { IMod } from './core/IMod';
+export { Vector } from './core/Vector';
+export { Color } from './core/Color';
+export { wait } from './core/Async';
 export {
     registerModClass,
     plug,
@@ -14,7 +14,7 @@ export {
     isModPlugged,
     getPluggedMods,
     clearRegistry,
-} from "./core/ModRegistry";
+} from './core/ModRegistry';
 
 // Interfaces
 export type {
@@ -25,13 +25,10 @@ export type {
     IScalable,
     IVisible,
     IUIAttachable,
-} from "./interfaces/Capabilities";
+} from './interfaces/Capabilities';
 
 // Structures
-export * from "./structures";
+export * from './structures';
 
 // Static utilities
-export * from "./static";
-
-// Static utilities will be added here later
-// export * from "./static";
+export * from './static';

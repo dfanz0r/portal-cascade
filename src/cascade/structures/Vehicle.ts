@@ -1,15 +1,18 @@
 // src/cascade/structures/Vehicle.ts
 // Vehicle wrapper class that extends ModObject and implements relevant capabilities.
 
+import { GameArray } from "../core/GameArray";
 import { ModObject } from "../core/ModObject";
+import type { Vector } from "../core/Vector";
 import type { IDamageable } from "../interfaces/Capabilities";
-import { GameArray } from "./GameArray";
 import { Player } from "./Player";
+import { Preserve } from "../decorators";
 
 /**
  * Wrapper class for Vehicle objects, providing ergonomic access to vehicle-related operations.
  * Implements capabilities for damage.
  */
+@Preserve()
 export class Vehicle extends ModObject<mod.Vehicle> implements IDamageable {
     // IDamageable implementation
     /**
@@ -114,5 +117,15 @@ export class Vehicle extends ModObject<mod.Vehicle> implements IDamageable {
      */
     getPlayerInSeat(seatIndex: number): mod.Player {
         return mod.GetPlayerFromVehicleSeat(this.handle, seatIndex);
+    }
+
+    /**
+     * Teleports a vehicle to a destination.
+     * @param vehicle The vehicle to teleport.
+     * @param destination The destination position.
+     * @param orientation The orientation angle in radians.
+     */
+    teleport(destination: Vector, orientation: number): void {
+        mod.Teleport(this.handle, destination.getHandle(), orientation);
     }
 }

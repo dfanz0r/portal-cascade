@@ -6,11 +6,13 @@ import { Vector } from "../core/Vector";
 import type { IEnableable } from "../interfaces/Capabilities";
 import type { Player } from "./Player";
 import type { Team } from "./Team";
+import { Preserve } from "../decorators";
 
 /**
  * Wrapper class for WorldIcon objects, providing ergonomic access to world icon operations.
  * Implements capabilities for enablement.
  */
+@Preserve()
 export class WorldIcon extends ModObject<mod.WorldIcon> implements IEnableable {
     // IEnableable implementation
     /**

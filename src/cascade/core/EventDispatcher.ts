@@ -192,3 +192,180 @@ export function clearAllHandlers(): void {
 export function getRegisteredEventNames(): string[] {
     return Array.from(eventHandlers.keys());
 }
+
+/**
+ * EventDispatcher namespace - provides access to all event handling functions.
+ * This namespace is used by the mod registry to register and dispatch events.
+ *
+ * Usage: EventDispatcher.registerEventHandler("eventName", handler)
+ *
+ * @internal
+ */
+export namespace EventDispatcher {
+    /**
+     * Registers an event handler for a specific event.
+     */
+    export function registerEventHandler(
+        eventName: string,
+        handler: (...args: unknown[]) => void
+    ): void {
+        const handlers = eventHandlers.get(eventName);
+        if (!handlers) {
+            eventHandlers.set(eventName, [handler]);
+        } else {
+            handlers.push(handler);
+        }
+    }
+
+    /**
+     * Unregisters an event handler.
+     */
+    export function unregisterEventHandler(
+        eventName: string,
+        handler: (...args: unknown[]) => void
+    ): boolean {
+        const handlers = eventHandlers.get(eventName);
+        if (!handlers) {
+            return false;
+        }
+        const index = handlers.indexOf(handler);
+        if (index === -1) {
+            return false;
+        }
+        handlers.splice(index, 1);
+        if (handlers.length === 0) {
+            eventHandlers.delete(eventName);
+        }
+        return true;
+    }
+
+    /**
+     * Dispatches an event to all registered handlers.
+     */
+    export function dispatchEvent(eventName: string, ...args: unknown[]): void {
+        const handlers = eventHandlers.get(eventName);
+        if (!handlers) {
+            return;
+        }
+        if (DEBUG_EVENT_DISPATCHER) {
+            console.log(
+                `[EventDispatcher] Dispatching ${eventName} with handlers: ${handlers
+                    .map((handler) => typeof handler)
+                    .join(", ")}`
+            );
+        }
+        for (const handler of handlers) {
+            if (typeof handler !== "function") {
+                console.error(
+                    `[EventDispatcher] Skipping non-function handler for event "${eventName}":`,
+                    handler
+                );
+                continue;
+            }
+            try {
+                handler(...args);
+            } catch (error) {
+                console.error(
+                    `[EventDispatcher] Error in handler for event "${eventName}":\n${formatError(
+                        error
+                    )}`
+                );
+            }
+        }
+    }
+
+    /**
+     * Gets the count of handlers for an event.
+     */
+    export function getHandlerCount(eventName: string): number {
+        const handlers = eventHandlers.get(eventName);
+        return handlers ? handlers.length : 0;
+    }
+
+    /**
+     * Clears all handlers for an event.
+     */
+    export function clearEventHandlers(eventName: string): void {
+        eventHandlers.delete(eventName);
+    }
+
+    /**
+     * Clears all handlers for all events.
+     */
+    export function clearAllHandlers(): void {
+        eventHandlers.clear();
+    }
+
+    /**
+     * Gets all registered event names.
+     */
+    export function getRegisteredEventNames(): string[] {
+        return Array.from(eventHandlers.keys());
+    }
+}
+
+// ============================================================================
+// Wrapper Registry System - Reusable Cache for Wrapper Objects
+// ============================================================================
+
+/**
+ * Generic wrapper registry for caching wrapper instances.
+ * Prevents creating new wrapper objects on every event dispatch.
+ * Reuses the same wrapper instance for the same underlying handle.
+ *
+ * @template T The handle type (e.g., mod.Player, mod.UIWidget)
+ * @template W The wrapper type (e.g., Player, UIButtonWidget)
+ */
+export class WrapperRegistry<T extends mod.Object, W> {
+    private cache = new Map<T, W>();
+    private factory: (handle: T) => W;
+
+    /**
+     * Creates a new wrapper registry.
+     * @param factory Function to create a wrapper instance from a handle
+     */
+    public constructor(factory: (handle: T) => W) {
+        this.factory = factory;
+    }
+
+    /**
+     * Gets or creates a wrapper instance for a handle.
+     * If the handle is already cached, the cached wrapper is returned.
+     * Otherwise, a new wrapper is created via the factory and cached.
+     *
+     * @param handle The underlying engine handle
+     * @returns The cached or newly created wrapper instance
+     */
+    public getOrCreate(handle: T): W {
+        let wrapper = this.cache.get(handle);
+        if (!wrapper) {
+            wrapper = this.factory(handle);
+            this.cache.set(handle, wrapper);
+        }
+        return wrapper;
+    }
+
+    /**
+     * Removes a wrapper from the cache.
+     * Call this when the underlying object is destroyed or no longer valid.
+     *
+     * @param handle The underlying engine handle
+     */
+    public remove(handle: T): void {
+        this.cache.delete(handle);
+    }
+
+    /**
+     * Clears all cached wrappers.
+     */
+    public clear(): void {
+        this.cache.clear();
+    }
+
+    /**
+     * Gets the current cache size.
+     */
+    public size(): number {
+        return this.cache.size;
+    }
+}

@@ -2,12 +2,15 @@
 // Player wrapper class that extends ModObject and implements relevant capabilities.
 
 import { ModObject } from "../core/ModObject";
+import type { Vector } from "../core/Vector";
 import type { IDamageable } from "../interfaces/Capabilities";
+import { Preserve } from "../decorators";
 
 /**
  * Wrapper class for Player objects, providing ergonomic access to player-related operations.
  * Implements capabilities for damage.
  */
+@Preserve()
 export class Player extends ModObject<mod.Player> implements IDamageable {
     // IDamageable implementation
     /**
@@ -270,5 +273,14 @@ export class Player extends ModObject<mod.Player> implements IDamageable {
      */
     forceManDown(): void {
         mod.ForceManDown(this.handle);
+    }
+
+    /**
+     * Teleports player to a destination.
+     * @param destination The destination position.
+     * @param orientation The orientation angle in radians.
+     */
+    teleport(destination: Vector, orientation: number): void {
+        mod.Teleport(this.handle, destination.getHandle(), orientation);
     }
 }

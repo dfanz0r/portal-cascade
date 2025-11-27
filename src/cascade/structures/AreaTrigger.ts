@@ -3,11 +3,13 @@
 
 import { ModObject } from "../core/ModObject";
 import type { IEnableable } from "../interfaces/Capabilities";
+import { Preserve } from "../decorators";
 
 /**
  * Wrapper class for AreaTrigger objects, providing ergonomic access to area trigger operations.
  * Implements capabilities for enablement.
  */
+@Preserve()
 export class AreaTrigger
     extends ModObject<mod.AreaTrigger>
     implements IEnableable

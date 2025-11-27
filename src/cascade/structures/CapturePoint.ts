@@ -1,15 +1,17 @@
 // src/cascade/structures/CapturePoint.ts
 // CapturePoint wrapper class that extends ModObject and implements relevant capabilities.
 
+import { GameArray } from "../core/GameArray";
 import { ModObject } from "../core/ModObject";
 import type { IEnableable, IOwnable } from "../interfaces/Capabilities";
-import { GameArray } from "./GameArray";
 import type { Player } from "./Player";
+import { Preserve } from "../decorators";
 
 /**
  * Wrapper class for CapturePoint objects, providing ergonomic access to capture point operations.
  * Implements capabilities for ownership and enabling/disabling.
  */
+@Preserve()
 export class CapturePoint
     extends ModObject<mod.CapturePoint>
     implements IOwnable, IEnableable

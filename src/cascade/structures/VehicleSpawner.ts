@@ -4,11 +4,13 @@
 import { ModObject } from "../core/ModObject";
 import type { ISpawner } from "../interfaces/Capabilities";
 import type { Vehicle } from "./Vehicle";
+import { Preserve } from "../decorators";
 
 /**
  * Wrapper class for VehicleSpawner objects, providing ergonomic access to vehicle spawning operations.
  * Implements capabilities for spawning vehicles.
  */
+@Preserve()
 export class VehicleSpawner
     extends ModObject<mod.VehicleSpawner>
     implements ISpawner<Vehicle>

@@ -1,8 +1,13 @@
 // src/cascade/core/ModRegistry.ts
 // Registry and lifecycle management system for mods with runtime plug/unplug capability
 
-import * as EventDispatcher from "./EventDispatcher";
+import {
+    registerEventHandler,
+    unregisterEventHandler,
+    clearAllHandlers,
+} from "./EventDispatcher";
 import type { IMod } from "./IMod";
+import { ValidationError, validateModData } from "./Validation";
 
 /**
  * Metadata for a mod class and its instance.
@@ -13,67 +18,130 @@ interface ModEntry {
     isPlugged: boolean;
 }
 
+namespace EventNames {
+    export const OngoingGlobal = "ongoingGlobal";
+    export const OngoingAreaTrigger = "ongoingAreaTrigger";
+    export const OngoingCapturePoint = "ongoingCapturePoint";
+    export const OngoingEmplacementSpawner = "ongoingEmplacementSpawner";
+    export const OngoingHQ = "ongoingHQ";
+    export const OngoingInteractPoint = "ongoingInteractPoint";
+    export const OngoingMCOM = "ongoingMCOM";
+    export const OngoingPlayer = "ongoingPlayer";
+    export const OngoingScreenEffect = "ongoingScreenEffect";
+    export const OngoingSector = "ongoingSector";
+    export const OngoingSpawner = "ongoingSpawner";
+    export const OngoingSpawnPoint = "ongoingSpawnPoint";
+    export const OngoingTeam = "ongoingTeam";
+    export const OngoingVehicle = "ongoingVehicle";
+    export const OngoingVehicleSpawner = "ongoingVehicleSpawner";
+    export const OngoingWaypointPath = "ongoingWaypointPath";
+    export const OngoingWorldIcon = "ongoingWorldIcon";
+    export const OnAIMoveToFailed = "onAIMoveToFailed";
+    export const OnAIMoveToRunning = "onAIMoveToRunning";
+    export const OnAIMoveToSucceeded = "onAIMoveToSucceeded";
+    export const OnAIParachuteRunning = "onAIParachuteRunning";
+    export const OnAIParachuteSucceeded = "onAIParachuteSucceeded";
+    export const OnAIWaypointIdleFailed = "onAIWaypointIdleFailed";
+    export const OnAIWaypointIdleRunning = "onAIWaypointIdleRunning";
+    export const OnAIWaypointIdleSucceeded = "onAIWaypointIdleSucceeded";
+    export const OnCapturePointCaptured = "onCapturePointCaptured";
+    export const OnCapturePointCapturing = "onCapturePointCapturing";
+    export const OnCapturePointLost = "onCapturePointLost";
+    export const OnGameModeEnding = "onGameModeEnding";
+    export const OnGameModeStarted = "onGameModeStarted";
+    export const OnMandown = "onMandown";
+    export const OnMCOMArmed = "onMCOMArmed";
+    export const OnMCOMDefused = "onMCOMDefused";
+    export const OnMCOMDestroyed = "onMCOMDestroyed";
+    export const OnPlayerDamaged = "onPlayerDamaged";
+    export const OnPlayerDeployed = "onPlayerDeployed";
+    export const OnPlayerDied = "onPlayerDied";
+    export const OnPlayerEarnedKill = "onPlayerEarnedKill";
+    export const OnPlayerEarnedKillAssist = "onPlayerEarnedKillAssist";
+    export const OnPlayerEnterAreaTrigger = "onPlayerEnterAreaTrigger";
+    export const OnPlayerEnterCapturePoint = "onPlayerEnterCapturePoint";
+    export const OnPlayerEnterVehicle = "onPlayerEnterVehicle";
+    export const OnPlayerEnterVehicleSeat = "onPlayerEnterVehicleSeat";
+    export const OnPlayerExitAreaTrigger = "onPlayerExitAreaTrigger";
+    export const OnPlayerExitCapturePoint = "onPlayerExitCapturePoint";
+    export const OnPlayerExitVehicle = "onPlayerExitVehicle";
+    export const OnPlayerExitVehicleSeat = "onPlayerExitVehicleSeat";
+    export const OnPlayerInteract = "onPlayerInteract";
+    export const OnPlayerJoinGame = "onPlayerJoinGame";
+    export const OnPlayerLeaveGame = "onPlayerLeaveGame";
+    export const OnPlayerSwitchTeam = "onPlayerSwitchTeam";
+    export const OnPlayerUIButtonEvent = "onPlayerUIButtonEvent";
+    export const OnPlayerUndeploy = "onPlayerUndeploy";
+    export const OnRayCastHit = "onRayCastHit";
+    export const OnRayCastMissed = "onRayCastMissed";
+    export const OnRevived = "onRevived";
+    export const OnSpawnerSpawned = "onSpawnerSpawned";
+    export const OnTimeLimitReached = "onTimeLimitReached";
+    export const OnVehicleDestroyed = "onVehicleDestroyed";
+    export const OnVehicleSpawned = "onVehicleSpawned";
+}
+
 /**
  * List of valid method names from the IMod interface.
  * Only methods in this list will be bound and dispatched.
  */
 const VALID_MOD_METHODS = new Set<string>([
     // Global events
-    "ongoingGlobal",
-    "onGameModeStarted",
-    "onGameModeEnding",
+    EventNames.OngoingGlobal,
+    EventNames.OnGameModeStarted,
+    EventNames.OnGameModeEnding,
     // Player events
-    "onPlayerJoinGame",
-    "onPlayerLeaveGame",
-    "onPlayerDeployed",
-    "onPlayerUndeploy",
-    "onPlayerEarnedKill",
-    "onPlayerEarnedKillAssist",
-    "onPlayerDamaged",
-    "onPlayerDied",
-    "onRevived",
-    "onMandown",
-    "onPlayerSwitchTeam",
+    EventNames.OnPlayerJoinGame,
+    EventNames.OnPlayerLeaveGame,
+    EventNames.OnPlayerDeployed,
+    EventNames.OnPlayerUndeploy,
+    EventNames.OnPlayerEarnedKill,
+    EventNames.OnPlayerEarnedKillAssist,
+    EventNames.OnPlayerDamaged,
+    EventNames.OnPlayerDied,
+    EventNames.OnRevived,
+    EventNames.OnMandown,
+    EventNames.OnPlayerSwitchTeam,
     // Vehicle events
-    "onVehicleSpawned",
-    "onVehicleDestroyed",
-    "onPlayerEnterVehicle",
-    "onPlayerExitVehicle",
-    "onPlayerEnterVehicleSeat",
-    "onPlayerExitVehicleSeat",
+    EventNames.OnVehicleSpawned,
+    EventNames.OnVehicleDestroyed,
+    EventNames.OnPlayerEnterVehicle,
+    EventNames.OnPlayerExitVehicle,
+    EventNames.OnPlayerEnterVehicleSeat,
+    EventNames.OnPlayerExitVehicleSeat,
     // Capture point events
-    "onCapturePointCapturing",
-    "onCapturePointCaptured",
-    "onCapturePointLost",
-    "onPlayerEnterCapturePoint",
-    "onPlayerExitCapturePoint",
+    EventNames.OnCapturePointCapturing,
+    EventNames.OnCapturePointCaptured,
+    EventNames.OnCapturePointLost,
+    EventNames.OnPlayerEnterCapturePoint,
+    EventNames.OnPlayerExitCapturePoint,
     // MCOM events
-    "onMCOMArmed",
-    "onMCOMDefused",
-    "onMCOMDestroyed",
+    EventNames.OnMCOMArmed,
+    EventNames.OnMCOMDefused,
+    EventNames.OnMCOMDestroyed,
     // Area trigger events
-    "onPlayerEnterAreaTrigger",
-    "onPlayerExitAreaTrigger",
+    EventNames.OnPlayerEnterAreaTrigger,
+    EventNames.OnPlayerExitAreaTrigger,
     // Interact point events
-    "onPlayerInteract",
+    EventNames.OnPlayerInteract,
     // Spawner events
-    "onSpawnerSpawned",
+    EventNames.OnSpawnerSpawned,
     // Raycast events
-    "onRayCastHit",
-    "onRayCastMissed",
+    EventNames.OnRayCastHit,
+    EventNames.OnRayCastMissed,
     // UI events
-    "onPlayerUIButtonEvent",
+    EventNames.OnPlayerUIButtonEvent,
     // AI events
-    "onAIMoveToFailed",
-    "onAIMoveToRunning",
-    "onAIMoveToSucceeded",
-    "onAIParachuteRunning",
-    "onAIParachuteSucceeded",
-    "onAIWaypointIdleFailed",
-    "onAIWaypointIdleRunning",
-    "onAIWaypointIdleSucceeded",
+    EventNames.OnAIMoveToFailed,
+    EventNames.OnAIMoveToRunning,
+    EventNames.OnAIMoveToSucceeded,
+    EventNames.OnAIParachuteRunning,
+    EventNames.OnAIParachuteSucceeded,
+    EventNames.OnAIWaypointIdleFailed,
+    EventNames.OnAIWaypointIdleRunning,
+    EventNames.OnAIWaypointIdleSucceeded,
     // Time events
-    "onTimeLimitReached",
+    EventNames.OnTimeLimitReached,
 ]);
 
 /**
@@ -91,33 +159,69 @@ const availableMods = new Map<string, ModEntry>();
 const boundMethodsRegistry = new Map<string, (...args: unknown[]) => void>();
 
 /**
- * Registers a mod class so it can be plugged in at runtime.
- * This creates a ModEntry for the class but does NOT instantiate it yet.
- * Instantiation happens when plug() is called.
+ * Registers a mod so it can be plugged in at runtime.
+ * Supports class constructors, object mods, and factory functions.
  *
- * @param modConstructor The class constructor (must extend Mod)
- * @param modName Optional explicit name. If not provided, uses the class name.
+ * Usage patterns:
+ * - Class: registerModClass("MyMod", MyModClass)
+ * - Object: registerModClass("MyMod", { onPlayerJoinGame: ... })
+ * - Factory: registerModClass("MyMod", createMyMod())
+ *
+ * @param modNameOrConstructor The mod name or class constructor
+ * @param modConstructorOrInstance Optional constructor or mod instance
  */
-export function registerModClass<T extends new () => IMod>(
-    modConstructor: T,
-    modName?: string
+export function registerModClass(
+    modNameOrConstructor: string | (new () => IMod),
+    modConstructorOrInstance?: (new () => IMod) | IMod
 ): void {
-    const name = modName || modConstructor.name;
+    let modName: string;
+    let modConstructor: new () => IMod;
 
-    if (availableMods.has(name)) {
+    // Handle overload: (string, constructor/instance)
+    if (typeof modNameOrConstructor === "string") {
+        modName = modNameOrConstructor;
+
+        if (modConstructorOrInstance === undefined) {
+            throw new Error(
+                `[ModRegistry] Missing constructor/instance for mod: ${modName}`
+            );
+        }
+
+        if (typeof modConstructorOrInstance === "function") {
+            // It's a constructor
+            modConstructor = modConstructorOrInstance;
+        } else if (typeof modConstructorOrInstance === "object") {
+            // It's an object mod - wrap it in a factory function
+            const objectMod = modConstructorOrInstance as IMod;
+            modConstructor = (() => objectMod) as unknown as new () => IMod;
+        } else {
+            throw new Error(
+                `[ModRegistry] Invalid mod registration for: ${modName}`
+            );
+        }
+    }
+    // Handle overload: (constructor)
+    else if (typeof modNameOrConstructor === "function") {
+        modConstructor = modNameOrConstructor;
+        modName = modConstructor.name;
+    } else {
+        throw new Error("[ModRegistry] Invalid arguments to registerModClass");
+    }
+
+    if (availableMods.has(modName)) {
         console.warn(
-            `[ModRegistry] Mod class '${name}' is already registered, skipping duplicate`
+            `[ModRegistry] Mod '${modName}' is already registered, skipping duplicate`
         );
         return;
     }
 
-    availableMods.set(name, {
+    availableMods.set(modName, {
         modConstructor,
         instance: null,
         isPlugged: false,
     });
 
-    console.log(`[ModRegistry] Registered mod class: ${name}`);
+    console.log(`[ModRegistry] Registered mod: ${modName}`);
 }
 
 /**
@@ -127,13 +231,13 @@ export function registerModClass<T extends new () => IMod>(
  * 1. Looks up the mod class by name
  * 2. Creates a new instance if it doesn't exist
  * 3. Inspects its methods to find event handlers
- * 4. Registers each handler with EventDispatcher
- * 5. Calls the mod's onPlug() lifecycle method
+ * 4. Registers each handler with EventDispatcher (wraps async methods)
+ * 5. Calls the mod's onPlug() lifecycle method (awaits if async)
  *
  * @param modName The name of the mod class to activate
- * @returns true if successful, false if the mod doesn't exist
+ * @returns Promise that resolves to true if successful, false if the mod doesn't exist
  */
-export function plug(modName: string): boolean {
+export async function plug(modName: string): Promise<boolean> {
     const entry = availableMods.get(modName);
     if (!entry) {
         console.error(
@@ -153,6 +257,20 @@ export function plug(modName: string): boolean {
     if (!entry.instance) {
         entry.instance = new entry.modConstructor();
         console.log(`[ModRegistry] Created instance of mod: ${modName}`);
+
+        // Validate mod data after instantiation
+        try {
+            validateModData(entry.instance, modName);
+            console.log(`[ModRegistry] Validated mod data for: ${modName}`);
+        } catch (error) {
+            if (error instanceof ValidationError) {
+                console.error(
+                    `[ModRegistry] Validation failed for mod '${modName}': ${error.message}`
+                );
+                throw error;
+            }
+            throw error;
+        }
     }
 
     const instance = entry.instance;
@@ -195,17 +313,34 @@ export function plug(modName: string): boolean {
 
         const value = (instance as Record<string, unknown>)[methodName];
         if (typeof value === "function" && methodName !== "constructor") {
-            // Bind the method to preserve 'this' context
-            const boundMethod = (value as (...args: unknown[]) => void).bind(
-                instance
-            );
+            const originalMethod = value as (
+                ...args: unknown[]
+            ) => void | Promise<void>;
+
+            // Optimize for QuickJS: detect async methods at plug time
+            // Only wrap async methods; sync methods bypass wrapper entirely
+            const isAsync = originalMethod.constructor.name === "AsyncFunction";
+            const handlerToRegister = isAsync
+                ? (...args: unknown[]): void => {
+                      const result = originalMethod.apply(
+                          instance,
+                          args
+                      ) as Promise<void>;
+                      result.catch((error) => {
+                          console.error(
+                              `[ModRegistry] Error in async handler '${modName}.${methodName}()':`,
+                              error
+                          );
+                      });
+                  }
+                : originalMethod;
 
             // Register with EventDispatcher
-            EventDispatcher.registerEventHandler(methodName, boundMethod);
+            registerEventHandler(methodName, handlerToRegister);
 
             // Track the bound method for later unregistration
             const key = `${modName}.${methodName}`;
-            boundMethodsRegistry.set(key, boundMethod);
+            boundMethodsRegistry.set(key, handlerToRegister);
 
             handlers.push(methodName);
             handlerCount++;
@@ -224,7 +359,11 @@ export function plug(modName: string): boolean {
     // Call the onPlug lifecycle method if it exists
     if (typeof instance.onPlug === "function") {
         try {
-            instance.onPlug();
+            const result = instance.onPlug();
+            // Await if async
+            if (result instanceof Promise) {
+                await result;
+            }
             console.log(`[ModRegistry] Called onPlug() for mod: ${modName}`);
         } catch (error) {
             console.error(
@@ -241,14 +380,14 @@ export function plug(modName: string): boolean {
  * Unplugs (deactivates) a mod at runtime.
  *
  * This process:
- * 1. Calls the mod's onUnplug() lifecycle method
+ * 1. Calls the mod's onUnplug() lifecycle method (awaits if async)
  * 2. Unregisters all of its event handlers from EventDispatcher
  * 3. Clears internal references
  *
  * @param modName The name of the mod to deactivate
- * @returns true if successful, false if the mod doesn't exist or isn't plugged
+ * @returns Promise that resolves to true if successful, false if the mod doesn't exist or isn't plugged
  */
-export function unplug(modName: string): boolean {
+export async function unplug(modName: string): Promise<boolean> {
     const entry = availableMods.get(modName);
     if (!entry) {
         console.error(
@@ -267,7 +406,11 @@ export function unplug(modName: string): boolean {
     // Call the onUnplug lifecycle method if it exists
     if (typeof instance.onUnplug === "function") {
         try {
-            instance.onUnplug();
+            const result = instance.onUnplug();
+            // Await if async
+            if (result instanceof Promise) {
+                await result;
+            }
             console.log(`[ModRegistry] Called onUnplug() for mod: ${modName}`);
         } catch (error) {
             console.error(
@@ -282,9 +425,7 @@ export function unplug(modName: string): boolean {
     for (const [key, boundMethod] of boundMethodsRegistry.entries()) {
         if (key.startsWith(`${modName}.`)) {
             const methodName = key.substring(modName.length + 1);
-            if (
-                EventDispatcher.unregisterEventHandler(methodName, boundMethod)
-            ) {
+            if (unregisterEventHandler(methodName, boundMethod)) {
                 unregisteredCount++;
                 console.log(`  [ModRegistry] Unbound: ${key}()`);
             }
@@ -339,6 +480,6 @@ export function getPluggedMods(): string[] {
 export function clearRegistry(): void {
     availableMods.clear();
     boundMethodsRegistry.clear();
-    EventDispatcher.clearAllHandlers();
+    clearAllHandlers();
     console.log("[ModRegistry] Registry cleared");
 }

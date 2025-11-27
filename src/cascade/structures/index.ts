@@ -1,7 +1,7 @@
 // src/cascade/structures/index.ts
 // Export all structure wrapper classes
 
-export { GameArray } from "./GameArray";
+export { GameArray } from "../core/GameArray";
 export { Player } from "./Player";
 export { Vehicle } from "./Vehicle";
 export { CapturePoint } from "./CapturePoint";
@@ -20,3 +20,4 @@ export { Team } from "./Team";
 export { WaypointPath } from "./WaypointPath";
 export { WorldIcon } from "./WorldIcon";
 export { UIWidget } from "./UIWidget";
+export { UIWeaponImage } from "./UIWeaponImage";

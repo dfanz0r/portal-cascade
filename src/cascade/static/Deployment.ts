@@ -1,8 +1,8 @@
 // src/cascade/static/Deployment.ts
 // Static utility namespace for player spawn and deployment control
 
-import type { Player } from "../structures/Player";
-import type { SpawnPoint } from "../structures/SpawnPoint";
+import type { Player } from '../structures/Player';
+import type { SpawnPoint } from '../structures/SpawnPoint';
 
 /**
  * Static utility namespace for controlling player deployment and spawning.

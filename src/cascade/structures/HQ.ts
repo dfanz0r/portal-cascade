@@ -3,11 +3,13 @@
 
 import { ModObject } from "../core/ModObject";
 import type { IEnableable, IOwnable } from "../interfaces/Capabilities";
+import { Preserve } from "../decorators";
 
 /**
  * Wrapper class for HQ (Headquarters) objects, providing ergonomic access to HQ operations.
  * Implements capabilities for ownership and enabling/disabling.
  */
+@Preserve()
 export class HQ extends ModObject<mod.HQ> implements IOwnable, IEnableable {
     // IOwnable implementation
     /**

@@ -1,8 +1,8 @@
 // src/cascade/structures/ScreenEffect.ts
 // ScreenEffect wrapper class that extends ModObject.
 
-import { ModObject } from "../core/ModObject";
-import type { Player } from "./Player";
+import { ModObject } from '../core/ModObject';
+import type { Player } from './Player';
 
 /**
  * Wrapper class for ScreenEffect objects, providing ergonomic access to screen effect operations.

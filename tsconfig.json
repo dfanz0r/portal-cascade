@@ -1,12 +1,17 @@
 {
-  "compilerOptions": {
-    "target": "ES2020",
-    "module": "NodeNext",
-    "moduleResolution": "nodenext",
-    "strict": true,
-    "outDir": "dist",
-    "types": ["./types"],
-    "rootDirs": ["./src/cascade", "./types"]
-  },
-  "include": ["src/cascade/**/*", "types/**/*", "scripts/**/*"]
+    "compilerOptions": {
+        "target": "ES2020",
+        "module": "NodeNext",
+        "moduleResolution": "nodenext",
+        "strict": true,
+        "outDir": "dist",
+        "types": ["./types"],
+        "baseUrl": ".",
+        "paths": {
+            "portal-cascade": ["./src"],
+            "portal-cascade/*": ["./src/*"]
+        },
+        "rootDirs": ["./src", "./types"]
+    },
+    "include": ["src/**/*", "types/**/*", "scripts/**/*", "mods/**/*"]
 }

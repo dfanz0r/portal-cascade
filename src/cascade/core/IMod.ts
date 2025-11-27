@@ -8,6 +8,9 @@
  * The framework will automatically forward event calls to the active mod instance
  * that implements the corresponding handler method.
  *
+ * All event handler methods support both synchronous (void) and asynchronous (Promise<void>) implementations.
+ * The framework will await async handlers and handle errors appropriately.
+ *
  * The Mod class only includes the most commonly used events. For a simpler implementation,
  * users can extend this class and implement only the events they need.
  *
@@ -18,7 +21,9 @@
  *         console.log('Player joined!');
  *     }
  *
- *     onGameModeStarted(): void {
+ *     async onGameModeStarted(): Promise<void> {
+ *         // Can use async/await for async operations
+ *         await loadGameData();
  *         console.log('Game started!');
  *     }
  * }
@@ -33,52 +38,54 @@ export interface IMod {
      * Called when the mod is activated/plugged in at runtime.
      * Use this for initialization, setup, and state initialization.
      * Optional - implement only if needed.
+     * Can be async for async initialization tasks.
      */
-    onPlug?(): void;
+    onPlug?(): void | Promise<void>;
 
     /**
      * Called when the mod is deactivated/unplugged at runtime.
      * Use this for cleanup, state reset, and resource cleanup.
      * Optional - implement only if needed.
+     * Can be async for async cleanup tasks.
      */
-    onUnplug?(): void;
+    onUnplug?(): void | Promise<void>;
 
     // Global events
     /**
      * Called continuously during gameplay for global updates.
      */
-    ongoingGlobal?(): void;
+    ongoingGlobal?(): void | Promise<void>;
 
     /**
      * Called when the game mode starts.
      */
-    onGameModeStarted?(): void;
+    onGameModeStarted?(): void | Promise<void>;
 
     /**
      * Called when the game mode is ending.
      */
-    onGameModeEnding?(): void;
+    onGameModeEnding?(): void | Promise<void>;
 
     // Player events
     /**
      * Called when a player joins the game.
      */
-    onPlayerJoinGame?(player: mod.Player): void;
+    onPlayerJoinGame?(player: mod.Player): void | Promise<void>;
 
     /**
      * Called when a player leaves the game.
      */
-    onPlayerLeaveGame?(playerId: number): void;
+    onPlayerLeaveGame?(playerId: number): void | Promise<void>;
 
     /**
      * Called when a player deploys.
      */
-    onPlayerDeployed?(player: mod.Player): void;
+    onPlayerDeployed?(player: mod.Player): void | Promise<void>;
 
     /**
      * Called when a player undeploys.
      */
-    onPlayerUndeploy?(player: mod.Player): void;
+    onPlayerUndeploy?(player: mod.Player): void | Promise<void>;
 
     /**
      * Called when a player earns a kill.
@@ -88,7 +95,7 @@ export interface IMod {
         otherPlayer: mod.Player,
         deathType: mod.DeathType,
         weaponUnlock: mod.WeaponUnlock
-    ): void;
+    ): void | Promise<void>;
 
     /**
      * Called when a player earns a kill assist.
@@ -96,7 +103,7 @@ export interface IMod {
     onPlayerEarnedKillAssist?(
         player: mod.Player,
         otherPlayer: mod.Player
-    ): void;
+    ): void | Promise<void>;
 
     /**
      * Called when a player takes damage.
@@ -106,7 +113,7 @@ export interface IMod {
         otherPlayer: mod.Player,
         damageType: mod.DamageType,
         weaponUnlock: mod.WeaponUnlock
-    ): void;
+    ): void | Promise<void>;
 
     /**
      * Called when a player dies.
@@ -116,43 +123,58 @@ export interface IMod {
         otherPlayer: mod.Player,
         deathType: mod.DeathType,
         weaponUnlock: mod.WeaponUnlock
-    ): void;
+    ): void | Promise<void>;
 
     /**
      * Called when a player is revived.
      */
-    onRevived?(player: mod.Player, otherPlayer: mod.Player): void;
+    onRevived?(
+        player: mod.Player,
+        otherPlayer: mod.Player
+    ): void | Promise<void>;
 
     /**
      * Called when a player is forced into the mandown state.
      */
-    onMandown?(player: mod.Player, otherPlayer: mod.Player): void;
+    onMandown?(
+        player: mod.Player,
+        otherPlayer: mod.Player
+    ): void | Promise<void>;
 
     /**
      * Called when a player switches teams.
      */
-    onPlayerSwitchTeam?(player: mod.Player, team: mod.Team): void;
+    onPlayerSwitchTeam?(
+        player: mod.Player,
+        team: mod.Team
+    ): void | Promise<void>;
 
     // Vehicle events
     /**
      * Called when a vehicle is spawned.
      */
-    onVehicleSpawned?(vehicle: mod.Vehicle): void;
+    onVehicleSpawned?(vehicle: mod.Vehicle): void | Promise<void>;
 
     /**
      * Called when a vehicle is destroyed.
      */
-    onVehicleDestroyed?(vehicle: mod.Vehicle): void;
+    onVehicleDestroyed?(vehicle: mod.Vehicle): void | Promise<void>;
 
     /**
      * Called when a player enters a vehicle.
      */
-    onPlayerEnterVehicle?(player: mod.Player, vehicle: mod.Vehicle): void;
+    onPlayerEnterVehicle?(
+        player: mod.Player,
+        vehicle: mod.Vehicle
+    ): void | Promise<void>;
 
     /**
      * Called when a player exits a vehicle.
      */
-    onPlayerExitVehicle?(player: mod.Player, vehicle: mod.Vehicle): void;
+    onPlayerExitVehicle?(
+        player: mod.Player,
+        vehicle: mod.Vehicle
+    ): void | Promise<void>;
 
     /**
      * Called when a player enters a specific vehicle seat.
@@ -161,7 +183,7 @@ export interface IMod {
         player: mod.Player,
         vehicle: mod.Vehicle,
         seat: mod.Object
-    ): void;
+    ): void | Promise<void>;
 
     /**
      * Called when a player exits a specific vehicle seat.
@@ -170,23 +192,27 @@ export interface IMod {
         player: mod.Player,
         vehicle: mod.Vehicle,
         seat: mod.Object
-    ): void;
+    ): void | Promise<void>;
 
     // Capture point events
     /**
      * Called when a team begins capturing a capture point.
      */
-    onCapturePointCapturing?(capturePoint: mod.CapturePoint): void;
+    onCapturePointCapturing?(
+        capturePoint: mod.CapturePoint
+    ): void | Promise<void>;
 
     /**
      * Called when a team captures a capture point.
      */
-    onCapturePointCaptured?(capturePoint: mod.CapturePoint): void;
+    onCapturePointCaptured?(
+        capturePoint: mod.CapturePoint
+    ): void | Promise<void>;
 
     /**
      * Called when a team loses control of a capture point.
      */
-    onCapturePointLost?(capturePoint: mod.CapturePoint): void;
+    onCapturePointLost?(capturePoint: mod.CapturePoint): void | Promise<void>;
 
     /**
      * Called when a player enters a capture point area.
@@ -194,7 +220,7 @@ export interface IMod {
     onPlayerEnterCapturePoint?(
         player: mod.Player,
         capturePoint: mod.CapturePoint
-    ): void;
+    ): void | Promise<void>;
 
     /**
      * Called when a player exits a capture point area.
@@ -202,23 +228,23 @@ export interface IMod {
     onPlayerExitCapturePoint?(
         player: mod.Player,
         capturePoint: mod.CapturePoint
-    ): void;
+    ): void | Promise<void>;
 
     // MCOM events
     /**
      * Called when an MCOM is armed.
      */
-    onMCOMArmed?(mcom: mod.MCOM): void;
+    onMCOMArmed?(mcom: mod.MCOM): void | Promise<void>;
 
     /**
      * Called when an MCOM is defused.
      */
-    onMCOMDefused?(mcom: mod.MCOM): void;
+    onMCOMDefused?(mcom: mod.MCOM): void | Promise<void>;
 
     /**
      * Called when an MCOM detonates.
      */
-    onMCOMDestroyed?(mcom: mod.MCOM): void;
+    onMCOMDestroyed?(mcom: mod.MCOM): void | Promise<void>;
 
     // Area trigger events
     /**
@@ -227,7 +253,7 @@ export interface IMod {
     onPlayerEnterAreaTrigger?(
         player: mod.Player,
         areaTrigger: mod.AreaTrigger
-    ): void;
+    ): void | Promise<void>;
 
     /**
      * Called when a player exits an area trigger.
@@ -235,7 +261,7 @@ export interface IMod {
     onPlayerExitAreaTrigger?(
         player: mod.Player,
         areaTrigger: mod.AreaTrigger
-    ): void;
+    ): void | Promise<void>;
 
     // Interact point events
     /**
@@ -244,13 +270,16 @@ export interface IMod {
     onPlayerInteract?(
         player: mod.Player,
         interactPoint: mod.InteractPoint
-    ): void;
+    ): void | Promise<void>;
 
     // Spawner events
     /**
      * Called when a spawner spawns an AI.
      */
-    onSpawnerSpawned?(player: mod.Player, spawner: mod.Spawner): void;
+    onSpawnerSpawned?(
+        player: mod.Player,
+        spawner: mod.Spawner
+    ): void | Promise<void>;
 
     // Raycast events
     /**
@@ -260,12 +289,12 @@ export interface IMod {
         player: mod.Player,
         point: mod.Vector,
         normal: mod.Vector
-    ): void;
+    ): void | Promise<void>;
 
     /**
      * Called when a raycast misses.
      */
-    onRayCastMissed?(player: mod.Player): void;
+    onRayCastMissed?(player: mod.Player): void | Promise<void>;
 
     // UI events
     /**
@@ -275,52 +304,52 @@ export interface IMod {
         player: mod.Player,
         uiWidget: mod.UIWidget,
         uiButtonEvent: mod.UIButtonEvent
-    ): void;
+    ): void | Promise<void>;
 
     // AI events
     /**
      * Called when an AI fails to move to a destination.
      */
-    onAIMoveToFailed?(player: mod.Player): void;
+    onAIMoveToFailed?(player: mod.Player): void | Promise<void>;
 
     /**
      * Called when an AI starts moving to a target location.
      */
-    onAIMoveToRunning?(player: mod.Player): void;
+    onAIMoveToRunning?(player: mod.Player): void | Promise<void>;
 
     /**
      * Called when an AI reaches its target location.
      */
-    onAIMoveToSucceeded?(player: mod.Player): void;
+    onAIMoveToSucceeded?(player: mod.Player): void | Promise<void>;
 
     /**
      * Called when an AI parachute action is running.
      */
-    onAIParachuteRunning?(player: mod.Player): void;
+    onAIParachuteRunning?(player: mod.Player): void | Promise<void>;
 
     /**
      * Called when an AI parachute action succeeds.
      */
-    onAIParachuteSucceeded?(player: mod.Player): void;
+    onAIParachuteSucceeded?(player: mod.Player): void | Promise<void>;
 
     /**
      * Called when an AI stops following a waypoint.
      */
-    onAIWaypointIdleFailed?(player: mod.Player): void;
+    onAIWaypointIdleFailed?(player: mod.Player): void | Promise<void>;
 
     /**
      * Called when an AI starts following a waypoint.
      */
-    onAIWaypointIdleRunning?(player: mod.Player): void;
+    onAIWaypointIdleRunning?(player: mod.Player): void | Promise<void>;
 
     /**
      * Called when an AI finishes following a waypoint.
      */
-    onAIWaypointIdleSucceeded?(player: mod.Player): void;
+    onAIWaypointIdleSucceeded?(player: mod.Player): void | Promise<void>;
 
     // Time events
     /**
      * Called when the time limit is reached.
      */
-    onTimeLimitReached?(): void;
+    onTimeLimitReached?(): void | Promise<void>;
 }

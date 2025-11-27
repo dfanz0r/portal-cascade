@@ -3,11 +3,13 @@
 
 import { ModObject } from "../core/ModObject";
 import type { IEnableable } from "../interfaces/Capabilities";
+import { Preserve } from "../decorators";
 
 /**
  * Wrapper class for MCOM (Mobile Construction Object) objects, providing ergonomic access to MCOM operations.
  * Implements capabilities for enabling/disabling.
  */
+@Preserve()
 export class MCOM extends ModObject<mod.MCOM> implements IEnableable {
     // IEnableable implementation
     /**

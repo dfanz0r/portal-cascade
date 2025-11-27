@@ -1,8 +1,8 @@
 // src/cascade/static/World.ts
 // Static utility namespace for world and object operations
 
-import { GameArray } from "../structures/GameArray";
-import { Player } from "../structures/Player";
+import { GameArray } from '../core/GameArray';
+import { Player } from '../structures/Player';
 
 /**
  * Static utility namespace for world operations.
@@ -69,7 +69,7 @@ export namespace World {
     ): GameArray<Player> {
         return new GameArray(
             mod.GetAllPlayersInVehicle(vehicle),
-            (raw) => new Player(raw as mod.Player)
+            raw => new Player(raw as mod.Player)
         );
     }
 }

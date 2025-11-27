@@ -1,8 +1,8 @@
 // src/cascade/static/Players.ts
 // Static utility namespace for player-related operations
 
-import { GameArray } from "../structures/GameArray";
-import { Player } from "../structures/Player";
+import { GameArray } from '../core/GameArray';
+import { Player } from '../structures/Player';
 
 /**
  * Static utility namespace for player-related operations and queries.
@@ -15,7 +15,7 @@ export namespace Players {
     export function getAll(): GameArray<Player> {
         return new GameArray(
             mod.AllPlayers(),
-            (raw) => new Player(raw as mod.Player)
+            raw => new Player(raw as mod.Player)
         );
     }
 
@@ -63,5 +63,40 @@ export namespace Players {
      */
     export function undeployAll(): void {
         mod.UndeployAllPlayers();
+    }
+
+    /**
+     * Sets the camera type for all players (global operation).
+     * @param type The camera type.
+     */
+    export function setTypeForAll(type: mod.Cameras): void {
+        mod.SetCameraTypeForAll(type);
+    }
+
+    /**
+     * Sets the camera type for all players with an index (global operation).
+     * @param type The camera type.
+     * @param cameraIndex The camera index.
+     */
+    export function setTypeForAllWithIndex(
+        type: mod.Cameras,
+        cameraIndex: number
+    ): void {
+        mod.SetCameraTypeForAll(type, cameraIndex);
+    }
+
+    /**
+     * Sets the damage multiplier from AI to human players (global setting).
+     * @param multiplier The damage multiplier.
+     */
+    export function setAIToHumanDamageModifier(multiplier: number): void {
+        mod.SetAIToHumanDamageModifier(multiplier);
+    }
+
+    /**
+     * Disables player joining.
+     */
+    export function disableJoining(): void {
+        mod.DisablePlayerJoin();
     }
 }

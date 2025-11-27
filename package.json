@@ -1,28 +1,40 @@
 {
     "name": "portal-cascade",
-    "version": "0.1.0",
-    "description": "Cascade Framework for Battlefield Portal",
-    "main": "src/cascade/index.ts",
+    "version": "1.0.0",
+    "description": "OperationCascade Framework for Battlefield Portal - Modern TypeScript framework for creating Portal mods",
+    "homepage": "https://github.com/battlefield-portal-community/portal-cascade#readme",
+    "bugs": {
+        "url": "https://github.com/battlefield-portal-community/portal-cascade/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/battlefield-portal-community/portal-cascade.git"
+    },
+    "license": "ISC",
+    "author": "",
+    "type": "commonjs",
+    "main": "src/index.ts",
     "types": "types/index.d.ts",
     "bin": {
-        "bf-bundle": "./scripts/bundle.mjs"
+        "portal-bundle": "./scripts/bundle.mjs"
     },
-    "files": [
-        "src/cascade",
-        "types",
-        "scripts",
-        "tsconfig.json",
-        "biome.json"
-    ],
+    "files": ["src", "types", "scripts", "tsconfig.json", "biome.json"],
     "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "bundle": "node scripts/bundle.mjs",
+        "build": "npm run bundle",
         "format": "biome format --write .",
+        "format:check": "biome format .",
         "lint": "biome lint .",
-        "check": "biome check --write ."
+        "lint:fix": "biome lint --write .",
+        "check": "biome check .",
+        "check:fix": "biome check --write ."
     },
     "devDependencies": {
         "@biomejs/biome": "^1.8.3",
         "@types/node": "^24.7.2",
         "ts-morph": "^27.0.2",
+        "ts-node": "^10.9.2",
         "typescript": "^5.9.3"
     }
 }

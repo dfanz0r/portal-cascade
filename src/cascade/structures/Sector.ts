@@ -3,11 +3,13 @@
 
 import { ModObject } from "../core/ModObject";
 import type { IEnableable } from "../interfaces/Capabilities";
+import { Preserve } from "../decorators";
 
 /**
  * Wrapper class for Sector objects, providing ergonomic access to sector operations.
  * Implements capabilities for enablement.
  */
+@Preserve()
 export class Sector extends ModObject<mod.Sector> implements IEnableable {
     // IEnableable implementation
     /**

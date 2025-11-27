@@ -4,6 +4,16 @@
 import { Vector } from "../core/Vector";
 
 /**
+ * Gets a random number between min and max.
+ * @param min The minimum.
+ * @param max The maximum.
+ * @returns A random number.
+ */
+export function random(min: number, max: number): number {
+    return mod.RandomReal(min, max);
+}
+
+/**
  * Static utility namespace for mathematical and vector operations.
  */
 export namespace MathUtils {

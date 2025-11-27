@@ -1,8 +1,8 @@
 // src/cascade/structures/Spawner.ts
 // Spawner wrapper class that extends ModObject and implements relevant capabilities.
 
-import { ModObject } from "../core/ModObject";
-import type { Player } from "./Player";
+import { ModObject } from '../core/ModObject';
+import type { Player } from './Player';
 
 /**
  * Wrapper class for Spawner objects, providing ergonomic access to AI spawning operations.

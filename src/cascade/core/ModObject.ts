@@ -2,10 +2,13 @@
 // A thin base wrapper that stores the engine handle and provides universal operations
 // available to mod.Object values. Methods map directly to engine calls.
 
+import { Preserve } from "../decorators";
+
 /**
  * Base class for all framework wrappers that hold a raw handle from the engine.
  * Provides universal operations available to mod.Object values.
  */
+@Preserve()
 export abstract class ModObject<T extends mod.Object> {
     /**
      * The raw engine handle for this object.

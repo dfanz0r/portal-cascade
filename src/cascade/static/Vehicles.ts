@@ -1,9 +1,9 @@
 // src/cascade/static/Vehicles.ts
 // Static utility namespace for vehicle operations
 
-import { GameArray } from "../structures/GameArray";
-import type { Player } from "../structures/Player";
-import { Vehicle } from "../structures/Vehicle";
+import { GameArray } from '../core/GameArray';
+import type { Player } from '../structures/Player';
+import { Vehicle } from '../structures/Vehicle';
 
 /**
  * Static utility namespace for global vehicle-related operations and queries.
@@ -22,7 +22,7 @@ export namespace Vehicles {
     export function getAll(): GameArray<Vehicle> {
         return new GameArray(
             mod.AllVehicles(),
-            (raw) => new Vehicle(raw as mod.Vehicle)
+            raw => new Vehicle(raw as mod.Vehicle)
         );
     }
 

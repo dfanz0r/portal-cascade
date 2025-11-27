@@ -3,11 +3,13 @@
 
 import { ModObject } from "../core/ModObject";
 import type { ISpawner } from "../interfaces/Capabilities";
+import { Preserve } from "../decorators";
 
 /**
  * Wrapper class for EmplacementSpawner objects, providing ergonomic access to emplacement spawning operations.
  * Implements capabilities for spawning emplacements.
  */
+@Preserve()
 export class EmplacementSpawner
     extends ModObject<mod.EmplacementSpawner>
     implements ISpawner<ModObject<mod.Object>>

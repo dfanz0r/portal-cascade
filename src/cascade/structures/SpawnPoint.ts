@@ -1,8 +1,8 @@
 // src/cascade/structures/SpawnPoint.ts
 // SpawnPoint wrapper class that extends ModObject.
 
-import { ModObject } from "../core/ModObject";
-import type { Player } from "./Player";
+import { ModObject } from '../core/ModObject';
+import type { Player } from './Player';
 
 /**
  * Wrapper class for SpawnPoint objects, providing ergonomic access to spawn point operations.

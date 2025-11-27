@@ -3,11 +3,13 @@
 
 import { ModObject } from "../core/ModObject";
 import type { IEnableable } from "../interfaces/Capabilities";
+import { Preserve } from "../decorators";
 
 /**
  * Wrapper class for InteractPoint objects, providing ergonomic access to interact point operations.
  * Implements capabilities for enablement.
  */
+@Preserve()
 export class InteractPoint
     extends ModObject<mod.InteractPoint>
     implements IEnableable
